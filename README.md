@@ -143,6 +143,8 @@ Session-manager Config
 ```
 for session saving config, sen [resession-session-options](https://github.com/stevearc/resession.nvim#setup-options)
 
+NOTE: if you are using `resession.nvim` as a backend, the `config.autosave_ignore_filetypes` and `config.autosave_ignore_buftypes` options will be ignored, you should use `resession.nvim`'s `buf_filter` options instead.
+
 ## Additional resources
 
 For more information about autocmd and its event, see also:
