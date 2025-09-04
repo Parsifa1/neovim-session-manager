@@ -1,12 +1,13 @@
 # Neovim Session Manager
 
-A Neovim plugin that use built-in `:mksession` to manage sessions like folders in VSCode. It allows you to save the current folder as a session to open it later. The plugin can also automatically load the last session on startup, save the current one on exit and switch between session folders.
+A Neovim plugin that use built-in `:mksession`/[resession.nvim](https://github.com/stevearc/resession.nvim) to manage sessions like folders in VSCode. It allows you to save the current folder as a session to open it later. The plugin can also automatically load the last session on startup, save the current one on exit and switch between session folders.
 
 The plugin saves the sessions in the specified folder (see [configuration](#configuration)). The session corresponds to the working directory. If a session already exists for the current folder, it will be overwritten.
 
 ## Dependencies
 
 - [plenary.nvim](https://github.com/nvim-lua/plenary.nvim) for internal helpers.
+- [resession.nvim](https://github.com/nvim-lua/plenary.nvim) (optional) if using `resession` backend.
 
 ## Commands
 
@@ -34,6 +35,7 @@ To configure the plugin, you can call `require('session_manager').setup(values)`
 local Path = require('plenary.path')
 local config = require('session_manager.config')
 require('session_manager').setup({
+  resession_backend = false, -- Use resession.nvim as backend instead of vim's built-in :mksession
   sessions_dir = Path:new(vim.fn.stdpath('data'), 'sessions'), -- The directory where the session files will be saved.
   session_filename_to_dir = session_filename_to_dir, -- Function that replaces symbols into separators and colons to transform filename into a session directory.
   dir_to_session_filename = dir_to_session_filename, -- Function that replaces separators and colons into special symbols to transform session directory into a filename. Should use `vim.uv.cwd()` if the passed `dir` is `nil`.
@@ -115,6 +117,33 @@ vim.api.nvim_create_autocmd({ 'BufWritePre' }, {
   end
 })
 ```
+
+## Resession backend
+
+If you want to use `resession.nvim` as a backend instead of the built-in `:mksession`, set `resession_backend` to `true` in the configuration. Make sure you have `resession.nvim` installed.
+
+Session-manager Config
+```lua
+{
+    "Shatur/neovim-session-manager",
+    lazy = false,
+    dependencies = {
+        {
+            "stevearc/resession.nvim",
+            lazy = false,
+            config = true,
+        },
+    },
+    config = function()
+        require("session_manager").setup({
+          -- ...
+        })
+    end,
+},
+```
+for session saving config, sen [resession-session-options](https://github.com/stevearc/resession.nvim#setup-options)
+
+## Additional resources
 
 For more information about autocmd and its event, see also:
 
