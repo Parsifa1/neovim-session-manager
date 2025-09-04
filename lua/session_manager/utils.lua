@@ -48,24 +48,31 @@ function utils.load_session(filename, discard_current)
     end
   end
 
-  -- Delete all buffers first except the current one to avoid entering buffers scheduled for deletion.
-  local current_buffer = vim.api.nvim_get_current_buf()
-  for _, buffer in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_valid(buffer) and buffer ~= current_buffer then
-      vim.api.nvim_buf_delete(buffer, { force = true })
-    end
-  end
-  vim.api.nvim_buf_delete(current_buffer, { force = true })
-
   -- Set the active session filename.
   utils.active_session_filename = filename
 
-  local swapfile = vim.o.swapfile
-  vim.o.swapfile = false
   vim.api.nvim_exec_autocmds('User', { pattern = 'SessionLoadPre' })
-  vim.api.nvim_command('silent source ' .. filename)
+  if not config.resession_backend then
+    -- Delete all buffers first except the current one to avoid entering buffers scheduled for deletion.
+    local current_buffer = vim.api.nvim_get_current_buf()
+    for _, buffer in ipairs(vim.api.nvim_list_bufs()) do
+      if vim.api.nvim_buf_is_valid(buffer) and buffer ~= current_buffer then
+        vim.api.nvim_buf_delete(buffer, { force = true })
+      end
+    end
+    vim.api.nvim_buf_delete(current_buffer, { force = true })
+
+    local swapfile = vim.o.swapfile
+    vim.o.swapfile = false
+    vim.api.nvim_command('silent source ' .. filename)
+    vim.o.swapfile = swapfile
+  else
+    require('resession').load(config.session_filename_to_dir(filename).filename, {
+      silence_errors = true,
+      dir = vim.fn.fnamemodify(config.sessions_dir.filename, ':t'),
+    })
+  end
   vim.api.nvim_exec_autocmds('User', { pattern = 'SessionLoadPost' })
-  vim.o.swapfile = swapfile
 end
 
 ---@param filename string
@@ -76,9 +83,12 @@ function utils.save_session(filename)
   end
 
   -- Remove all non-file and utility buffers because they cannot be saved.
-  for _, buffer in ipairs(vim.api.nvim_list_bufs()) do
-    if vim.api.nvim_buf_is_valid(buffer) and not utils.is_restorable(buffer) then
-      vim.api.nvim_buf_delete(buffer, { force = true })
+  --NOTE: handle by resession if using it :
+  if not config.resession_backend then
+    for _, buffer in ipairs(vim.api.nvim_list_bufs()) do
+      if vim.api.nvim_buf_is_valid(buffer) and not utils.is_restorable(buffer) then
+        vim.api.nvim_buf_delete(buffer, { force = true })
+      end
     end
   end
 
@@ -91,7 +101,14 @@ function utils.save_session(filename)
   utils.active_session_filename = filename
 
   vim.api.nvim_exec_autocmds('User', { pattern = 'SessionSavePre' })
-  vim.api.nvim_command('mksession! ' .. filename)
+  if not config.resession_backend then
+    vim.api.nvim_command('mksession! ' .. filename)
+  else
+    require('resession').save(config.session_filename_to_dir(filename).filename, {
+      notify = false,
+      dir = vim.fn.fnamemodify(config.sessions_dir.filename, ':t'),
+    })
+  end
   vim.api.nvim_exec_autocmds('User', { pattern = 'SessionSavePost' })
 end
 
@@ -115,8 +132,6 @@ function utils.get_sessions(opts)
       local dir = config.session_filename_to_dir(session_filename)
       if dir:is_dir() then
         table.insert(sessions, { timestamp = vim.fn.getftime(session_filename), filename = session_filename, dir = dir })
-      else
-        Path:new(session_filename):rm()
       end
     end
   end

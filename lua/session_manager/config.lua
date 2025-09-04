@@ -4,6 +4,8 @@ local Enum = require('plenary.enum')
 local path_replacer = '__'
 local colon_replacer = '++'
 
+local resession_replacer = '_'
+
 local config = {
   AutoloadMode = Enum({
     'Disabled',
@@ -18,23 +20,40 @@ local config = {
 ---@return table: Session directory
 local function session_filename_to_dir(filename)
   -- Get session filename.
-  local dir = filename:sub(#tostring(config.sessions_dir) + 2)
+  if config.resession_backend then
+    config.defaults.sessions_dir = Path:new(vim.fn.stdpath('data'), 'resession')
+    local dir = filename:sub(#tostring(config.sessions_dir) + 2, -6)
+    dir = dir:gsub(resession_replacer, Path.path.sep):gsub('++', '_')
+    if vim.loop.os_uname().sysname == 'Windows_NT' then
+      -- match the first _ only on windows
+      dir = dir:gsub(Path.path.sep, ':', 1)
+    end
+    return Path:new(dir)
+  else
+    local dir = filename:sub(#tostring(config.sessions_dir) + 2)
 
-  dir = dir:gsub(colon_replacer, ':')
-  dir = dir:gsub(path_replacer, Path.path.sep)
-  return Path:new(dir)
+    dir = dir:gsub(colon_replacer, ':')
+    dir = dir:gsub(path_replacer, Path.path.sep)
+    return Path:new(dir)
+  end
 end
 
 --- Replaces separators and colons into special symbols to transform session directory into a filename.
 ---@param dir string: Path to session directory.
 ---@return table: Session filename.
 local function dir_to_session_filename(dir)
-  local filename = dir:gsub(':', colon_replacer)
-  filename = filename:gsub(Path.path.sep, path_replacer)
-  return Path:new(config.sessions_dir):joinpath(filename)
+  if config.resession_backend then
+    local filename = string.format('%s.json', dir:gsub('_', '++'):gsub(Path.path.sep, '_'):gsub(':', '_'))
+    return Path:new(config.sessions_dir):joinpath(filename)
+  else
+    local filename = dir:gsub(':', colon_replacer)
+    filename = filename:gsub(Path.path.sep, path_replacer)
+    return Path:new(config.sessions_dir):joinpath(filename)
+  end
 end
 
 config.defaults = {
+  resession_backend = false,
   sessions_dir = Path:new(vim.fn.stdpath('data'), 'sessions'),
   session_filename_to_dir = session_filename_to_dir,
   dir_to_session_filename = dir_to_session_filename,
