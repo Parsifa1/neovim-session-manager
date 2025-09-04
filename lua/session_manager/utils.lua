@@ -1,3 +1,4 @@
+---@diagnostic disable: deprecated
 local config = require('session_manager.config')
 local scandir = require('plenary.scandir')
 local Path = require('plenary.path')
@@ -180,6 +181,7 @@ end
 function utils.is_dir_in_ignore_list()
   local cwd = vim.uv.cwd()
   -- Use `fnamemodify` to allow paths like `~/.config`.
+  ---@diagnostic disable-next-line: param-type-mismatch
   return vim.tbl_contains(config.autosave_ignore_dirs, cwd) or vim.tbl_contains(config.autosave_ignore_dirs, vim.fn.fnamemodify(cwd, ':~'))
 end
 
