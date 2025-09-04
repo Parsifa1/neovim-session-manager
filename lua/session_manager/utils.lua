@@ -130,8 +130,11 @@ function utils.get_sessions(opts)
     -- Add all but the active session to the list.
     if config.load_include_current or session_filename ~= utils.active_session_filename then
       local dir = config.session_filename_to_dir(session_filename)
-      if dir:is_dir() then
-        table.insert(sessions, { timestamp = vim.fn.getftime(session_filename), filename = session_filename, dir = dir })
+      if not config.resession_backend or session_filename:sub(-4) == 'json' then
+        -- Skip .vim files when using resession backend.
+        if dir:is_dir() then
+          table.insert(sessions, { timestamp = vim.fn.getftime(session_filename), filename = session_filename, dir = dir })
+        end
       end
     end
   end
