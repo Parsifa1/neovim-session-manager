@@ -192,6 +192,9 @@ end
 ---@return boolean
 function utils.exists_in_session()
   local cwd = vim.uv.cwd()
+  if cwd == nil then
+    return false
+  end
   return config.dir_to_session_filename(cwd).filename == utils.active_session_filename
 end
 

@@ -6,7 +6,14 @@ local colon_replacer = '++'
 
 local resession_replacer = '_'
 
+---@class SessionManagerConfig: SessionManagerConfig.default
 local config = {
+  ---@class Mode
+  ---@class AutoloadMode: Enum
+  ---@field Disabled Mode
+  ---@field CurrentDir Mode
+  ---@field LastSession Mode
+  ---@field GitSession Mode
   AutoloadMode = Enum({
     'Disabled',
     'CurrentDir',
@@ -23,11 +30,7 @@ local function session_filename_to_dir(filename)
   if config.resession_backend then
     config.defaults.sessions_dir = Path:new(vim.fn.stdpath('data'), 'resession')
     local dir = filename:sub(#tostring(config.sessions_dir) + 2, -6)
-    dir = dir:gsub(resession_replacer, Path.path.sep):gsub('++', '_')
-    if vim.loop.os_uname().sysname == 'Windows_NT' then
-      -- match the first _ only on windows
-      dir = dir:gsub(Path.path.sep, ':', 1)
-    end
+    dir = dir:gsub('__', ':' .. Path.path.sep):gsub(resession_replacer, Path.path.sep):gsub('++', '_')
     return Path:new(dir)
   else
     local dir = filename:sub(#tostring(config.sessions_dir) + 2)
@@ -52,20 +55,24 @@ local function dir_to_session_filename(dir)
   end
 end
 
+---@class SessionManagerConfig.default
 config.defaults = {
   resession_backend = false,
   sessions_dir = Path:new(vim.fn.stdpath('data'), 'sessions'),
   session_filename_to_dir = session_filename_to_dir,
   dir_to_session_filename = dir_to_session_filename,
+  ---@type Mode|Mode[]
   autoload_mode = config.AutoloadMode.LastSession,
   autosave_last_session = true,
   autosave_ignore_not_normal = true,
   autosave_ignore_dirs = {},
+  ---@type string[] All buffers of these file types will be closed before the session is saved.
   autosave_ignore_filetypes = {
     'gitcommit',
     'gitrebase',
   },
   autosave_ignore_buftypes = {},
+  ---@type boolean Always autosaves session. If true, only autosaves after a session is active.
   autosave_only_in_session = false,
   max_path_length = 80,
   load_include_current = false,

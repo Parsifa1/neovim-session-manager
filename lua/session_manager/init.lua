@@ -5,7 +5,7 @@ local Job = require('plenary.job')
 local session_manager = {}
 
 --- Apply user settings.
----@param values table
+---@param values SessionManagerConfig
 function session_manager.setup(values) setmetatable(config, { __index = vim.tbl_extend('force', config.defaults, values) }) end
 
 -- Displays action selection menu for :SessionManager
